@@ -50,6 +50,13 @@
       text-decoration: none;
       color: #2980b9;
     }
+    .error {
+      color: #e74c3c;
+    }
+    .loading {
+      color: #7f8c8d;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -65,41 +72,49 @@
   </form>
 
   <div id="productList">
-    <p>Belum ada produk yang ditambahkan</p>
+    <p class="loading">Memuat produk...</p>
   </div>
 
   <script>
     const form = document.getElementById('productForm');
     const productList = document.getElementById('productList');
 
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzNKu1HGqwFFN1i4m1D_cOR_340yHvGVMRtrYQ27LzZXJfen5nvt3TcT4-mS1KuZv7QuA/exec'; // GANTI INI
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzNKu1HGqwFFN1i4m1D_cOR_340yHvGVMRtrYQ27LzZXJfen5nvt3TcT4-mS1KuZv7QuA/exec';
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const name = document.getElementById('productName').value;
       const url = document.getElementById('productLink').value;
-      const id = Date.now().toString();
+      
+      // Validasi URL
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    alert('Link harus dimulai dengan http:// atau https://');
-    return;
-  }
-      let image = '', title = '';
+        alert('Link harus dimulai dengan http:// atau https://');
+        return;
+      }
+
+      const id = Date.now().toString();
+      let image = '', title = name;
+
+      // Tampilkan loading
+      productList.innerHTML = '<p class="loading">Menambahkan produk...</p>';
 
       try {
-        const res = await fetch(`https://api.linkpreview.net/?key=f820f13937a8aabed194756bb892abcf&q=${encodeURIComponent(url)}`);
-        const data = await res.json();
-        image = data.image || '';
-        title = data.title || name;
+        // Ambil preview link
+        const previewRes = await fetch(`https://api.linkpreview.net/?key=f820f13937a8aabed194756bb892abcf&q=${encodeURIComponent(url)}`);
+        const previewData = await previewRes.json();
+        image = previewData.image || '';
+        title = previewData.title || name;
       } catch (err) {
         console.error('Gagal ambil data dari LinkPreview:', err);
       }
 
       try {
-        await fetch(WEBAPP_URL, {
+        // Kirim ke Google Sheets
+        const res = await fetch(WEBAPP_URL, {
           method: 'POST',
           body: JSON.stringify({
             id: id,
-            name: name,
+            name: title, // Gunakan title dari preview jika ada
             link: url,
             image: image
           }),
@@ -107,29 +122,55 @@
             'Content-Type': 'application/json'
           }
         });
+
+        if (!res.ok) {
+          throw new Error('Gagal menyimpan produk');
+        }
+
+        alert('Produk berhasil ditambahkan!');
+        form.reset();
+        loadProducts();
       } catch (err) {
         console.error('Gagal kirim ke Google Sheets:', err);
+        productList.innerHTML = `<p class="error">Gagal menambahkan produk: ${err.message}</p>`;
       }
-
-      form.reset();
-      loadProducts();
     });
 
     async function loadProducts() {
-  productList.innerHTML = '<p>Memuat produk...</p>';
-  try {
-    const res = await fetch(WEBAPP_URL);
-    if (!res.ok) throw new Error('Gagal memuat data');
-    const data = await res.json();
-    if (data.length === 0) {
-      productList.innerHTML = '<p>Belum ada produk ditambahkan</p>';
-      return;
+      productList.innerHTML = '<p class="loading">Memuat produk...</p>';
+      
+      try {
+        const res = await fetch(WEBAPP_URL);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        if (!data || data.length === 0) {
+          productList.innerHTML = '<p>Belum ada produk ditambahkan</p>';
+          return;
+        }
+        
+        // Render produk
+        productList.innerHTML = '';
+        data.forEach(item => {
+          const productDiv = document.createElement('div');
+          productDiv.className = 'product';
+          productDiv.innerHTML = `
+            <strong>${item.name || 'Nama Produk'}</strong><br/>
+            ${item.image ? `<img src="${item.image}" alt="${item.name}">` : ''}
+            <p><a href="${item.link}" target="_blank">Lihat Produk</a></p>
+          `;
+          productList.appendChild(productDiv);
+        });
+        
+      } catch (err) {
+        console.error('Gagal ambil data dari Google Sheets:', err);
+        productList.innerHTML = `<p class="error">Gagal memuat produk: ${err.message}</p>`;
+      }
     }
-    // ... kode render produk
-  } catch (err) {
-    productList.innerHTML = `<p class="error">Error: ${err.message}</p>`;
-  }
-}
 
     window.addEventListener('DOMContentLoaded', loadProducts);
   </script>
