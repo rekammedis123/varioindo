@@ -25,16 +25,6 @@
       width: 100%;
       font-size: 16px;
     }
-    .link-backhome {
-            color: rgb(0, 0, 0);
-            text-align: center;
-            opacity: 0.8;
-            max-width: 100%;
-            animation: fadeIn 2s ease-in-out;
-        }
-        .link-backhome:hover {
-            color: rgb(0, 110, 255);
-        }
     button {
       background: #2c3e50;
       color: white;
@@ -72,56 +62,75 @@
     <label>Link Produk (Tokopedia, Shopee, dll):</label>
     <input type="url" id="productLink" placeholder="https://..." required />
     <button type="submit">+ Tambah Produk</button>
-</a>
-<a href="index.html" class="link-backhome">kembali ke halaman utama</a>
   </form>
-  
 
   <div id="productList"></div>
 
   <script>
     const form = document.getElementById('productForm');
     const productList = document.getElementById('productList');
-  
+
+    const WEBAPP_URL = 'https://script.google.com/macros/s/LINK_WEBAPP_KAMU/exec'; // GANTI INI
+
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const name = document.getElementById('productName').value;
       const url = document.getElementById('productLink').value;
-  
+      const id = Date.now().toString();
+
       let image = '', title = '';
-  
+
       try {
         const res = await fetch(`https://api.linkpreview.net/?key=f820f13937a8aabed194756bb892abcf&q=${encodeURIComponent(url)}`);
         const data = await res.json();
         image = data.image || '';
         title = data.title || name;
       } catch (err) {
-        console.error('Gagal ambil data gambar:', err);
+        console.error('Gagal ambil data dari LinkPreview:', err);
       }
-  
-      // Tampilkan ke halaman
-      const html = `
-        <div class="product">
-          <strong>${name}</strong><br/>
-          ${image ? `<img src="${image}" alt="${name}">` : ''}
-          <p><a href="${url}" target="_blank">Lihat Produk</a></p>
-        </div>
-      `;
-      productList.insertAdjacentHTML('beforeend', html);
-  
-      // Kirim data ke Google Sheets via Web App
+
       try {
-        await fetch('https://script.google.com/macros/s/AKfycbzNKu1HGqwFFN1i4m1D_cOR_340yHvGVMRtrYQ27LzZXJfen5nvt3TcT4-mS1KuZv7QuA/exec', {
+        await fetch(WEBAPP_URL, {
           method: 'POST',
-          body: JSON.stringify({ name, link: url, image }),
-          headers: { 'Content-Type': 'application/json' }
+          body: JSON.stringify({
+            id: id,
+            name: name,
+            link: url,
+            image: image
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
       } catch (err) {
         console.error('Gagal kirim ke Google Sheets:', err);
       }
-  
+
       form.reset();
+      loadProducts();
     });
+
+    async function loadProducts() {
+      productList.innerHTML = '';
+      try {
+        const res = await fetch(WEBAPP_URL);
+        const data = await res.json();
+        data.forEach(item => {
+          const html = `
+            <div class="product">
+              <strong>${item.name}</strong><br/>
+              ${item.image ? `<img src="${item.image}" alt="${item.name}">` : ''}
+              <p><a href="${item.link}" target="_blank">Lihat Produk</a></p>
+            </div>
+          `;
+          productList.insertAdjacentHTML('beforeend', html);
+        });
+      } catch (err) {
+        console.error('Gagal ambil data dari Google Sheets:', err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadProducts);
   </script>
 
 </body>
