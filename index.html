@@ -2,27 +2,66 @@
 <html>
   <head>
     <title>Input ICD 9/10</title>
+    <style>
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 6px;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
     <script>
       function submitICD() {
         const code = document.getElementById("icdCode").value;
         const desc = document.getElementById("icdDesc").value;
+        const category = document.getElementById("icdCategory").value;
 
-        google.script.run.withSuccessHandler(updateList).saveICD({ code, desc });
+        if (code.trim() === "" || desc.trim() === "") {
+          alert("Kode dan Deskripsi ICD harus diisi.");
+          return;
+        }
+
+        google.script.run.withSuccessHandler(updateTable).saveICD({ code, desc, category });
 
         document.getElementById("icdCode").value = "";
         document.getElementById("icdDesc").value = "";
+        document.getElementById("icdCategory").value = "";
       }
 
-      function updateList(data) {
-        const list = document.getElementById("icdList");
-        list.innerHTML = "";
+      function deleteICD(rowIndex) {
+        if (confirm("Yakin ingin menghapus data ini?")) {
+          google.script.run.withSuccessHandler(updateTable).deleteICD(rowIndex);
+        }
+      }
+
+      function updateTable(data) {
+        const table = document.getElementById("icdTable");
+        table.innerHTML = `
+          <tr>
+            <th>No</th>
+            <th>Kode ICD</th>
+            <th>Deskripsi</th>
+            <th>Kategori</th>
+            <th>Aksi</th>
+          </tr>
+        `;
         data.forEach((item, i) => {
-          list.innerHTML += `<li>${i + 1}. ${item[0]} - ${item[1]}</li>`;
+          table.innerHTML += `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${item[0]}</td>
+              <td>${item[1]}</td>
+              <td>${item[2]}</td>
+              <td><button onclick="deleteICD(${i + 2})">Hapus</button></td>
+            </tr>
+          `;
         });
       }
 
       function loadICDList() {
-        google.script.run.withSuccessHandler(updateList).getICDList();
+        google.script.run.withSuccessHandler(updateTable).getICDList();
       }
 
       window.onload = loadICDList;
@@ -33,10 +72,17 @@
     <label>Kode ICD:</label><br />
     <input type="text" id="icdCode" /><br />
     <label>Deskripsi:</label><br />
-    <input type="text" id="icdDesc" /><br /><br />
+    <input type="text" id="icdDesc" /><br />
+    <label>Kategori:</label><br />
+    <select id="icdCategory">
+      <option value="">-- Pilih Kategori --</option>
+      <option value="ICD-9">ICD-9</option>
+      <option value="ICD-10">ICD-10</option>
+      <option value="Lainnya">Lainnya</option>
+    </select><br /><br />
     <button onclick="submitICD()">Submit</button>
 
     <h3>Daftar ICD:</h3>
-    <ul id="icdList"></ul>
+    <table id="icdTable"></table>
   </body>
 </html>
