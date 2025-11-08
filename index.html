@@ -1,88 +1,82 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Input ICD 9/10</title>
-    <style>
-      table, th, td {
-        border: 1px solid black;
-        border-collapse: collapse;
-        padding: 6px;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-    </style>
-    <script>
-      function submitICD() {
-        const code = document.getElementById("icdCode").value;
-        const desc = document.getElementById("icdDesc").value;
-        const category = document.getElementById("icdCategory").value;
+<head>
+  <title>Input ICD</title>
+  <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Form Input ICD</h2>
+  <form id="icdForm">
+    <label>Nama Pasien:</label><br>
+    <input type="text" name="nama" required><br><br>
 
-        if (code.trim() === "" || desc.trim() === "") {
-          alert("Kode dan Deskripsi ICD harus diisi.");
-          return;
-        }
+    <label>Kode ICD:</label><br>
+    <input type="text" name="kodeICD" required><br><br>
 
-        google.script.run.withSuccessHandler(updateTable).saveICD({ code, desc, category });
+    <label>Deskripsi:</label><br>
+    <input type="text" name="deskripsi"><br><br>
 
-        document.getElementById("icdCode").value = "";
-        document.getElementById("icdDesc").value = "";
-        document.getElementById("icdCategory").value = "";
-      }
+    <button type="submit">Kirim</button>
+  </form>
 
-      function deleteICD(rowIndex) {
-        if (confirm("Yakin ingin menghapus data ini?")) {
-          google.script.run.withSuccessHandler(updateTable).deleteICD(rowIndex);
-        }
-      }
+  <h3>📋 Data ICD Terkirim</h3>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Nama Pasien</th>
+        <th>Kode ICD</th>
+        <th>Deskripsi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-      function updateTable(data) {
-        const table = document.getElementById("icdTable");
-        table.innerHTML = `
-          <tr>
-            <th>No</th>
-            <th>Kode ICD</th>
-            <th>Deskripsi</th>
-            <th>Kategori</th>
-            <th>Aksi</th>
-          </tr>
-        `;
-        data.forEach((item, i) => {
-          table.innerHTML += `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${item[0]}</td>
-              <td>${item[1]}</td>
-              <td>${item[2]}</td>
-              <td><button onclick="deleteICD(${i + 2})">Hapus</button></td>
-            </tr>
-          `;
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyWjvtY2WO2W9FoXb6zgYDfYDBD4su_CIX5JEC4FjMxMTlGDWdW73s_lJeCH6JMw6lZ4g/exec";
+
+    function loadTable() {
+      fetch(scriptURL)
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector("#dataTable tbody");
+          tbody.innerHTML = ""; // Clear existing rows
+          data.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${new Date(row.timestamp).toLocaleString()}</td>
+              <td>${row.nama}</td>
+              <td>${row.kodeICD}</td>
+              <td>${row.deskripsi}</td>
+            `;
+            tbody.appendChild(tr);
+          });
         });
-      }
+    }
 
-      function loadICDList() {
-        google.script.run.withSuccessHandler(updateTable).getICDList();
-      }
+    document.getElementById("icdForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      fetch(scriptURL, {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert("✅ " + msg);
+        loadTable(); // Refresh table
+        e.target.reset(); // Clear form
+      });
+    });
 
-      window.onload = loadICDList;
-    </script>
-  </head>
-  <body>
-    <h2>Form Input ICD 9/10</h2>
-    <label>Kode ICD:</label><br />
-    <input type="text" id="icdCode" /><br />
-    <label>Deskripsi:</label><br />
-    <input type="text" id="icdDesc" /><br />
-    <label>Kategori:</label><br />
-    <select id="icdCategory">
-      <option value="">-- Pilih Kategori --</option>
-      <option value="ICD-9">ICD-9</option>
-      <option value="ICD-10">ICD-10</option>
-      <option value="Lainnya">Lainnya</option>
-    </select><br /><br />
-    <button onclick="submitICD()">Submit</button>
-
-    <h3>Daftar ICD:</h3>
-    <table id="icdTable"></table>
-  </body>
+    // Load table on page load
+    window.onload = loadTable;
+  </script>
+</body>
 </html>
