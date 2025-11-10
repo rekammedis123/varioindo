@@ -1,82 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Input ICD</title>
+  <meta charset="UTF-8">
+  <title>Permintaan Resume Medis</title>
   <style>
-    table, th, td {
-      border: 1px solid black;
-      border-collapse: collapse;
-      padding: 6px;
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 30px;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      margin-top: 15px;
+      display: block;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
-  <h2>Form Input ICD</h2>
-  <form id="icdForm">
-    <label>Nama Pasien:</label><br>
-    <input type="text" name="nama" required><br><br>
 
-    <label>Kode ICD:</label><br>
-    <input type="text" name="kodeICD" required><br><br>
+  <h2 style="text-align:center;">Form Permintaan Resume Medis</h2>
 
-    <label>Deskripsi:</label><br>
-    <input type="text" name="deskripsi"><br><br>
+  <form id="resumeForm">
+    <label>Nama Pasien</label>
+    <input type="text" name="nama_pasien" required>
 
-    <button type="submit">Kirim</button>
+    <label>Tanggal Lahir</label>
+    <input type="date" name="tgl_lahir" required>
+
+    <label>Jenis Kelamin</label>
+    <select name="jk" required>
+      <option value="">-- Pilih --</option>
+      <option value="Laki-laki">Laki-laki</option>
+      <option value="Perempuan">Perempuan</option>
+    </select>
+
+    <label>Alamat</label>
+    <textarea name="alamat" rows="3" required></textarea>
+
+    <label>Nama Petugas Rekam Medis</label>
+    <input type="text" name="petugas" required>
+
+    <label>Tanggal Permintaan</label>
+    <input type="date" name="tgl_permintaan" required>
+
+    <button type="submit">Kirim Permintaan</button>
   </form>
 
-  <h3>📋 Data ICD Terkirim</h3>
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>Timestamp</th>
-        <th>Nama Pasien</th>
-        <th>Kode ICD</th>
-        <th>Deskripsi</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyWjvtY2WO2W9FoXb6zgYDfYDBD4su_CIX5JEC4FjMxMTlGDWdW73s_lJeCH6JMw6lZ4g/exec";
-
-    function loadTable() {
-      fetch(scriptURL)
-        .then(res => res.json())
-        .then(data => {
-          const tbody = document.querySelector("#dataTable tbody");
-          tbody.innerHTML = ""; // Clear existing rows
-          data.forEach(row => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${new Date(row.timestamp).toLocaleString()}</td>
-              <td>${row.nama}</td>
-              <td>${row.kodeICD}</td>
-              <td>${row.deskripsi}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        });
-    }
-
-    document.getElementById("icdForm").addEventListener("submit", function(e) {
+    document.getElementById("resumeForm").addEventListener("submit", function(e) {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      fetch(scriptURL, {
+      const formData = new FormData(this);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+
+      fetch("https://script.google.com/macros/s/AKfycbxsaKlHtmLqDvVBTILWF7mYLuy36S_OHxVdBTIDuUQ/dev", {
         method: "POST",
-        body: formData
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json"
+        }
       })
       .then(res => res.text())
-      .then(msg => {
-        alert("✅ " + msg);
-        loadTable(); // Refresh table
-        e.target.reset(); // Clear form
-      });
+      .then(msg => alert("Permintaan berhasil dikirim!"))
+      .catch(err => alert("Gagal mengirim: " + err));
     });
-
-    // Load table on page load
-    window.onload = loadTable;
   </script>
+
 </body>
 </html>
