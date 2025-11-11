@@ -39,32 +39,21 @@
   </form>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxsaKlHtmLqDvVBTILWF7mYLuy36S_OHxVdBTIDuUQ/dev";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbx_RF6UCw1p4ZAb24g0fvOddvEdUH2_YFQsHdyhJ8oKbwqpn3Z0O3BuR2dWtaaxT-ZI/exec";
 
     document.getElementById("resumeForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
-      const form = e.target;
-      const data = {
-        nama_pasien: form.nama_pasien.value,
-        tgl_lahir: form.tgl_lahir.value,
-        jk: form.jk.value,
-        alamat: form.alamat.value,
-        petugas: form.petugas.value,
-        tgl_permintaan: form.tgl_permintaan.value
-      };
+      const formData = new FormData(e.target);
 
       fetch(scriptURL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
+        body: formData
       })
       .then(res => res.text())
       .then(msg => {
         alert("✅ " + msg);
-        form.reset();
+        e.target.reset();
       })
       .catch(err => {
         alert("❌ Gagal mengirim: " + err);
