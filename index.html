@@ -1,16 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+  <meta charset="UTF-8">
   <title>Permintaan Resume Medis</title>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
     label {
       display: block;
       margin-top: 10px;
+      font-weight: bold;
     }
     input, button {
       margin-top: 5px;
-      padding: 6px;
-      width: 300px;
+      padding: 8px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
@@ -59,7 +79,8 @@
         e.target.reset();
       })
       .catch(err => {
-        alert("❌ Gagal mengirim: " + err);
+        console.error("Fetch error:", err);
+        alert("❌ Gagal mengirim: " + err.message);
       });
     });
   </script>
